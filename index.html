@@ -253,7 +253,7 @@ init();
 <script>
 /* ===== Barcode-Scanner (Tabelle koch_barcodes) ===== */
 (function(){
-let scanner=null,scanning=false,locked=false,cur=null,BC={},bcTried=false;
+let scanner=null,scanning=false,locked=false,cur=null,BC={},bcTried=false,picked='';
 const U=['g','ml','Stück','Packung','Dose','Bund'];
 const TB='koch_barcodes';
 const HINT='\n\nHast du kochassistent_barcodes.sql in Supabase ausgeführt?';
@@ -323,26 +323,41 @@ async function onCode(code){
 }
 
 function showNew(code){
-  const names=Object.keys(state.inventory).sort((a,b)=>a.localeCompare(b,'de'));
-  panel(`<div class="box" style="margin-top:14px;background:#f0fdfa"><h3>Unbekannter Barcode ${esc(code)}</h3><div class="grid">
-  <div class="field" style="grid-column:span 3"><label>Vorhandenes Lebensmittel zuordnen</label><select id="nbSel" onchange="nbChange()"><option value="">– neues Lebensmittel anlegen –</option>${names.map(n=>`<option>${esc(n)}</option>`).join('')}</select></div>
-  <div class="field" style="grid-column:span 3"><label>Oder neuer Name</label><input id="nbName"></div>
+  picked='';
+  panel(`<div class="box" style="margin-top:14px;background:#f0fdfa"><h3>Unbekannter Barcode ${esc(code)}</h3>
+  <div class="field"><label>Vorhandenes Lebensmittel suchen und antippen</label><input id="nbSearch" type="search" placeholder="🔎 Name eingeben …" oninput="nbRender()" autocomplete="off"></div>
+  <div id="nbList" class="scroll" style="max-height:200px;margin-top:8px"></div>
+  <p class="hint" id="nbPicked" style="margin:8px 0 14px">Kein Lebensmittel ausgewählt.</p>
+  <div class="grid">
+  <div class="field" style="grid-column:span 6"><label>Oder neues Lebensmittel (Name)</label><input id="nbName" autocomplete="off"></div>
   <div class="field" style="grid-column:span 3"><label>Packungsgröße</label><input id="nbSize" type="number" min="0" step="any" inputmode="decimal"></div>
   <div class="field" style="grid-column:span 3"><label>Einheit</label><select id="nbUnit">${U.map(u=>`<option>${u}</option>`).join('')}</select></div></div>
   <div class="actions"><button class="btn primary" onclick="nbSave()">Speichern &amp; weiter</button><button class="btn" onclick="scanCancel()">Abbrechen</button></div></div>`);
+  nbRender();
 }
-window.nbChange=function(){
-  const s=$('nbSel').value,nm=$('nbName'),un=$('nbUnit');
-  nm.disabled=!!s;if(s)nm.value='';un.disabled=false;
-  const d=state.inventory[s];
-  if(s&&d){const u=normalizeUnit(d.unit);if(U.includes(u)){un.value=u;un.disabled=true}}
+window.nbRender=function(){
+  const q=($('nbSearch').value||'').trim().toLocaleLowerCase('de');
+  const names=Object.keys(state.inventory).sort((a,b)=>a.localeCompare(b,'de')).filter(n=>n.toLocaleLowerCase('de').includes(q));
+  const list=$('nbList');
+  list.innerHTML=names.length?names.map(n=>`<div style="padding:10px 12px;border-bottom:1px solid #e8eef4;cursor:pointer;display:flex;justify-content:space-between;gap:10px;background:${n===picked?'#ccfbf1':'#fff'}"><span>${esc(n)}</span><small style="color:#64748b">${esc(stockText(n))}</small></div>`).join(''):'<div class="empty" style="padding:14px">Kein Treffer – unten neuen Namen eingeben.</div>';
+  if(names.length)[...list.children].forEach((el,i)=>el.onclick=()=>nbPick(names[i]));
 };
+function nbPick(n){
+  picked=picked===n?'':n;
+  const nm=$('nbName'),un=$('nbUnit');
+  nm.disabled=!!picked;if(picked)nm.value='';
+  un.disabled=false;
+  const d=state.inventory[picked];
+  if(picked&&d){const u=normalizeUnit(d.unit);if(U.includes(u)){un.value=u;un.disabled=true}}
+  $('nbPicked').textContent=picked?'Ausgewählt: '+picked+' (nochmal antippen zum Aufheben)':'Kein Lebensmittel ausgewählt.';
+  nbRender();
+}
 window.nbSave=async function(){
-  const sel=$('nbSel').value,size=Number($('nbSize').value),unit=$('nbUnit').value;
-  let name=sel||$('nbName').value.trim().replace(/\s+/g,' ');
+  const size=Number($('nbSize').value),unit=$('nbUnit').value;
+  let name=picked||$('nbName').value.trim().replace(/\s+/g,' ');
   if(!name)return alert('Bitte ein Lebensmittel auswählen oder einen neuen Namen eingeben.');
   if(!(size>0))return alert('Bitte eine Packungsgröße größer 0 eingeben.');
-  if(!sel){
+  if(!picked){
     const ex=Object.keys(state.inventory).find(k=>k.toLocaleLowerCase('de')===name.toLocaleLowerCase('de'));
     if(ex){if(!confirm('„'+ex+'“ gibt es schon. Diesen Eintrag verwenden?'))return;name=ex}
   }
