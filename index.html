@@ -108,7 +108,7 @@ function exportHistory(){pruneHistory();downloadJson(state.history,'verbrauchshi
 function exportTemplate(){downloadJson({prompt_template:state.template},'promptvorlage.json')}function importTemplate(e){readJsonFile(e,d=>{let t=typeof d.prompt_template==='string'?d.prompt_template:typeof d.template==='string'?d.template:'';if(!t)return alert('Die Datei enthält keine gültige Promptvorlage.');if(confirm('Promptvorlage importieren?')){state.template=t;save();refreshAll()}})}
 /* ===== Anmeldung und gemeinsamer Cloud-Speicher (Supabase) ===== */
 const SUPABASE_URL = "https://qqirmzlwmlxadxebztcp.supabase.co";
-const SUPABASE_KEY = "sb_publishable_w59liY7wLY_aQJN-1CJxEA_b7Gzr5DU";
+const SUPABASE_KEY = "sb_publishable_FLnQWZcxdIBwpI5l45dfuA_IAEAf47h";
 const HASH = location.hash;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
