@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f766e">
+<title>Kochassistent – Vorrat & Promptgenerator</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f1f5f9;--surface:#fff;--surface-2:#f8fafc;--ink:#172033;--muted:#64748b;--line:#dbe4ee;--brand:#0f766e;--brand-2:#115e59;--brand-soft:#ccfbf1;--accent:#f59e0b;--danger:#b91c1c;--shadow:0 12px 34px rgba(15,23,42,.08);--radius:18px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(135deg,#ecfeff 0,#f8fafc 35%,var(--bg) 100%);color:var(--ink);font:15px/1.5 Inter,Segoe UI,Roboto,Arial,sans-serif}button,input,select,textarea{font:inherit}button{border:0;cursor:pointer}.app-header{position:sticky;top:0;z-index:20;color:#fff;background:linear-gradient(110deg,#134e4a,#0f766e 55%,#0d9488);box-shadow:0 5px 22px rgba(15,118,110,.2)}.header-inner{max-width:1500px;margin:auto;padding:22px clamp(16px,3vw,38px)}.brand-row{display:flex;justify-content:space-between;gap:18px;align-items:center}.brand{display:flex;gap:14px;align-items:center}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:rgba(255,255,255,.16);font-size:25px}.brand h1{margin:0;font-size:clamp(21px,3vw,30px);letter-spacing:-.5px}.brand p{margin:3px 0 0;color:#ccfbf1}.status-pill{display:flex;align-items:center;gap:8px;padding:8px 13px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(255,255,255,.12);white-space:nowrap;font-size:13px}.status-dot{width:9px;height:9px;border-radius:50%;background:#86efac;box-shadow:0 0 0 4px rgba(134,239,172,.16)}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}.tab{padding:10px 14px;border-radius:11px;color:#d1fae5;background:rgba(255,255,255,.09);transition:.2s}.tab:hover,.tab.active{color:var(--brand-2);background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.12)}main{max-width:1500px;margin:auto;padding:26px clamp(16px,3vw,38px) 60px}.panel{display:none}.panel.active{display:block;animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.panel-intro{display:flex;justify-content:space-between;gap:15px;align-items:end;margin:0 0 19px}.panel-intro h2{margin:0;font-size:26px;letter-spacing:-.5px}.panel-intro p{margin:4px 0 0;color:var(--muted)}.box{margin-bottom:18px;padding:22px;border:1px solid rgba(219,228,238,.9);border-radius:var(--radius);background:rgba(255,255,255,.92);box-shadow:var(--shadow)}.box h3{margin:0 0 15px;font-size:18px}.box h3::before{content:'';display:inline-block;width:7px;height:20px;margin-right:9px;vertical-align:-3px;border-radius:5px;background:var(--brand)}.grid{display:grid;grid-template-columns:repeat(6,minmax(125px,1fr));gap:14px}.field label{display:block;margin-bottom:6px;color:#334155;font-size:13px;font-weight:700}.field input,.field select,.field textarea,.search{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);outline:0;transition:border .15s,box-shadow .15s}.field input:focus,.field select:focus,.field textarea:focus,.search:focus{border-color:#14b8a6;box-shadow:0 0 0 4px rgba(20,184,166,.12)}.field textarea{min-height:120px;resize:vertical}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:18px}.actions label{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:#334155}.actions input[type=checkbox]{accent-color:var(--brand);width:17px;height:17px}.btn{padding:10px 14px;border:1px solid #bfd0dc;border-radius:11px;background:#fff;color:#23404a;font-weight:650;transition:.18s}.btn:hover{transform:translateY(-1px);border-color:#6aa99f;box-shadow:0 5px 12px rgba(15,118,110,.12)}.btn.primary{border-color:var(--brand);background:var(--brand);color:#fff}.btn.primary:hover{background:var(--brand-2)}.btn.warning{border-color:#fbbf24;background:#fffbeb;color:#92400e}.btn.danger{border-color:#fecaca;background:#fff1f2;color:var(--danger)}.status{margin-left:auto;color:var(--brand-2);font-weight:700}.scroll{max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:12px 13px;border-bottom:1px solid #e8eef4;text-align:left;vertical-align:top}th{position:sticky;top:0;z-index:1;background:#ecfdf5;color:#134e4a;font-size:12px;text-transform:uppercase;letter-spacing:.04em}tbody tr{transition:.15s}tbody tr:hover{background:#f0fdfa}#inventoryTable tbody tr,.clickable{cursor:pointer}tr.selected{background:#ccfbf1!important}.preview{min-height:120px;padding:16px;border:1px dashed #a7d9d0;border-radius:13px;background:linear-gradient(135deg,#f0fdfa,#f8fafc);white-space:pre-wrap;color:#334155}.hint{margin-top:-6px;color:var(--muted);font-size:13px}.import-grid{display:grid;grid-template-columns:repeat(2,minmax(280px,1fr));gap:16px}.import-card{padding:19px;border:1px solid var(--line);border-radius:15px;background:var(--surface-2)}.import-card h3{margin-bottom:8px}.import-card h3::before{display:none}.import-card p{color:var(--muted);font-size:14px}.import-card code{padding:3px 6px;border-radius:6px;background:#e2e8f0;color:#334155}.output-area{width:100%;min-height:330px;padding:15px;border:1px solid var(--line);border-radius:13px;background:#0f172a;color:#d1fae5;font:13px/1.55 Consolas,monospace;resize:vertical}.empty{padding:30px;text-align:center;color:var(--muted)}@media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}.panel-intro{display:block}.status{width:100%;margin:4px 0 0}.import-grid{grid-template-columns:1fr}}@media(max-width:600px){.header-inner,main{padding-left:13px;padding-right:13px}.brand-row{align-items:flex-start}.status-pill{font-size:0;padding:9px}.status-dot{margin:0}.tabs{margin-top:16px;gap:5px}.tab{flex:1 1 auto;padding:9px 8px;font-size:13px}.box{padding:16px;border-radius:15px}.grid{grid-template-columns:repeat(2,1fr)}.field[style]{grid-column:span 2!important}.actions .btn{flex:1 1 145px}th,td{padding:10px 8px;font-size:13px}.scroll{margin-inline:-3px}}@media(max-width:380px){.grid{grid-template-columns:1fr}.field[style]{grid-column:span 1!important}}
+[hidden]{display:none!important}#auth{max-width:430px;margin:70px auto;padding:0 16px}#auth .field{margin-bottom:12px}.logout{padding:8px 12px;border:1px solid rgba(255,255,255,.3);border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font-size:13px}.logout:hover{background:rgba(255,255,255,.22)}.hdr-right{display:flex;gap:10px;align-items:center}
+</style>
+</head>
+<body>
+<div id="auth" hidden></div>
+<div id="app" hidden>
+<header class="app-header"><div class="header-inner"><div class="brand-row"><div class="brand"><div class="brand-mark">🍲</div><div><h1>Kochassistent</h1><p>Vorrat clever nutzen · Prompts präzise erstellen</p></div></div><div class="hdr-right"><div class="status-pill"><span class="status-dot"></span><span id="headerStatus">Bereit</span></div><button class="logout" onclick="logout()" title="Abmelden">⎋ Abmelden</button></div></div><nav class="tabs"><button class="tab active" data-tab="recipe">🍽️ Rezeptplanung</button><button class="tab" data-tab="inventory">📦 Lebensmittelbestand</button><button class="tab" data-tab="history">🧾 Verbrauch</button><button class="tab" data-tab="template">✍️ Promptvorlage</button><button class="tab" data-tab="output">🤖 Ausgabe</button><button class="tab" data-tab="backup">💾 Import / Export</button></nav></div></header>
+<main>
+<section id="recipe" class="panel active"><div class="panel-intro"><div><h2>Rezeptplanung</h2><p>Vorgaben festlegen und aus deinem Bestand einen fertigen KI-Prompt erzeugen.</p></div></div><div class="box"><h3>Rezeptvorgaben</h3><div class="grid"><div class="field"><label>Personen</label><input id="persons" type="number" min="1" step="1" value="2"></div><div class="field"><label>kcal pro Person</label><input id="kcalPerson" type="number" min="1" value="700"></div><div class="field"><label>kcal gesamt</label><input id="kcalTotal" readonly></div><div class="field"><label>Uhrzeit</label><input id="mealTime" type="time" value="07:00"></div><div class="field"><label>Schicht</label><select id="shift"><option>frei</option><option>Frühschicht</option><option>Spätschicht</option><option>Nachtschicht</option></select></div><div class="field"><label>Mahlzeit</label><select id="meal"><option>Frühstück</option><option>Mittagessen</option><option>Abendessen</option><option selected>Hauptmahlzeit</option><option>Snack</option><option>keine feste Vorgabe</option></select></div></div><div class="actions"><label><input id="mainMeal" type="checkbox" checked> Hauptmahlzeit</label><label><input id="coldMeal" type="checkbox"> Kalte Mahlzeit (vorbereiten / unterwegs)</label><label><input id="shopping" type="checkbox"> Einkauf erlaubt</label></div></div><div class="box"><h3>Aktueller Lebensmittelbestand</h3><div id="selectedTable" class="scroll"></div><div class="actions"><button class="btn" onclick="refreshAll()">↻ Bestand aktualisieren</button></div></div><div class="box"><h3>Bestandsvorschau</h3><div id="preview" class="preview"></div><div class="actions"><button class="btn primary" onclick="generatePrompt()">✨ Prompt erzeugen</button><button class="btn" onclick="copyPrompt()">Prompt kopieren</button><button class="btn" onclick="showTab('output')">KI-Ausgabe öffnen</button><button class="btn warning" onclick="resetInputs()">Eingaben zurücksetzen</button><span id="status" class="status">Bereit</span></div></div></section>
+<section id="inventory" class="panel"><div class="panel-intro"><div><h2>Lebensmittelbestand</h2><p>Einträge anklicken und bearbeiten. Der Bestand ist für alle angemeldeten Mitglieder derselbe und wird automatisch gespeichert.</p></div></div><div class="box"><h3>Lebensmittel bearbeiten</h3><div class="grid"><div class="field" style="grid-column:span 2"><label>Lebensmittel</label><input id="itemName"></div><div class="field"><label>Menge</label><input id="itemAmount" type="number" min="0" step="any"></div><div class="field"><label>Einheit</label><select id="itemUnit"><option>g</option><option>ml</option><option>Stück</option><option>Packung</option><option>Dose</option><option>Bund</option><option>ohne Mengenangabe</option></select></div><div class="field" style="grid-column:span 2"><label>Notiz</label><input id="itemNote"></div></div><div class="actions"><button class="btn primary" onclick="saveItem()">Speichern</button><button class="btn" onclick="clearItem()">Neue Eingabe</button><button class="btn danger" onclick="deleteItem()">Eintrag löschen</button></div></div><div class="box"><input id="search" class="search" placeholder="🔎 Lebensmittel suchen …" oninput="refreshInventory()"><div id="inventoryTable" class="scroll" style="margin-top:14px"></div></div></section>
+<section id="history" class="panel"><div class="panel-intro"><div><h2>Verbrauchshistorie</h2><p>Die letzten drei Tage helfen, Wiederholungen bei Rezepten zu vermeiden.</p></div></div><div class="box"><div class="actions" style="margin-top:0"><h3 style="margin:0;flex:1">Verbrauchte Lebensmittel der letzten 3 Tage</h3><button class="btn" onclick="pruneHistory();refreshAll()">Bereinigen</button><button class="btn" onclick="exportHistory()">Exportieren</button></div><div id="historyTable" class="scroll" style="margin-top:15px"></div></div></section>
+<section id="template" class="panel"><div class="panel-intro"><div><h2>Promptvorlage</h2><p>Platzhalter werden beim Erzeugen automatisch ersetzt.</p></div></div><div class="box"><h3>Vorlage bearbeiten</h3><p class="hint">Verfügbare Platzhalter: {inventory}, {history}, {persons}, {kcal_person}, {kcal_total}, {meal_time}, {shift}, {meal}, {main_meal}, {cold_meal}, {shopping}.</p><textarea id="templateText" class="field textarea" style="width:100%;min-height:480px;padding:14px;border:1px solid var(--line);border-radius:13px;font:13px/1.5 Consolas,monospace"></textarea><div class="actions"><button class="btn primary" onclick="saveTemplate()">Vorlage speichern</button><button class="btn" onclick="restoreTemplate()">Standardvorlage</button><button class="btn" onclick="exportTemplate()">Exportieren</button></div></div></section>
+<section id="output" class="panel"><div class="panel-intro"><div><h2>Prompt & KI-Ausgabe</h2><p>Prompt kopieren, in eine KI einfügen und die Verbrauchsliste anschließend übernehmen.</p></div></div><div class="box"><h3>Erzeugter KI-Prompt</h3><textarea id="promptText" class="output-area"></textarea><div class="actions"><button class="btn primary" onclick="copyPrompt()">Prompt kopieren</button></div></div><div class="box"><h3>KI-Ausgabe zur Verbrauchsübernahme</h3><textarea id="aiOutput" class="field textarea" style="width:100%;min-height:300px" placeholder="KI-Antwort hier einfügen …"></textarea><div class="actions"><button class="btn primary" onclick="processAIOutput()">Verbrauch übernehmen</button></div></div></section>
+<section id="backup" class="panel"><div class="panel-intro"><div><h2>Import & Export</h2><p>Backups sichern oder einzelne Datenbereiche auf ein anderes Gerät übertragen.</p></div></div><div class="box"><h3>Konto</h3><p class="hint" id="accountInfo"></p><div class="field" style="max-width:340px"><label>Neues Passwort (mind. 8 Zeichen)</label><input id="newPw" type="password" autocomplete="new-password"></div><div class="actions"><button class="btn" onclick="changePw()">Passwort ändern</button><button class="btn" onclick="logout()">Abmelden</button></div></div><div class="box"><h3>Komplett-Backup</h3><p class="hint">Alle Daten gemeinsam sichern oder wiederherstellen.</p><div class="actions"><button class="btn primary" onclick="exportBackup()">Backup exportieren</button><button class="btn" onclick="document.getElementById('backupImport').click()">Backup importieren</button><input id="backupImport" type="file" accept="application/json,.json" hidden onchange="importBackup(event)"></div></div><div class="import-grid"><div class="import-card"><h3>Lebensmittelbestand</h3><p><code>lebensmittelbestand.json</code></p><button class="btn" onclick="exportInventory()">Exportieren</button> <button class="btn" onclick="document.getElementById('inventoryImport').click()">Importieren</button><input id="inventoryImport" type="file" accept="application/json,.json" hidden onchange="importInventory(event)"></div><div class="import-card"><h3>Verbrauchshistorie</h3><p><code>verbrauchshistorie.json</code></p><button class="btn" onclick="exportHistory()">Exportieren</button> <button class="btn" onclick="document.getElementById('historyImport').click()">Importieren</button><input id="historyImport" type="file" accept="application/json,.json" hidden onchange="importHistory(event)"></div><div class="import-card"><h3>Promptvorlage</h3><p><code>prompt_vorlage.json</code></p><button class="btn" onclick="exportTemplate()">Exportieren</button> <button class="btn" onclick="document.getElementById('templateImport').click()">Importieren</button><input id="templateImport" type="file" accept="application/json,.json" hidden onchange="importTemplate(event)"></div></div></section>
+</main>
+</div>
+<script>
+const STORAGEKEY='kochassistent_vollstaendig_v3';
+const defaultTemplate=`Du bist ein präziser Koch- und Ernährungsassistent. Erstelle ein alltagstaugliches Rezept.
+
+VORGABEN
+- Personen: {persons}
+- Zielenergie: {kcal_person} kcal pro Person, {kcal_total} kcal gesamt
+- Uhrzeit: {meal_time}
+- Schicht: {shift}
+- Mahlzeit: {meal}
+- Hauptmahlzeit: {main_meal}
+- Kalte Mahlzeit für unterwegs: {cold_meal}
+- Einkauf erlaubt: {shopping}
+
+VERWENDBARE LEBENSMITTEL
+{inventory}
+
+VERWENDETE LEBENSMITTEL DER LETZTEN 3 TAGE
+{history}
+
+WICHTIGSTE BESTANDSREGELN
+- Die Liste VERWENDBARE LEBENSMITTEL ist die einzige Quelle für vorhandene Zutaten.
+- Jede Zutat, die nicht exakt in dieser Liste steht, darf nicht verwendet oder erwähnt werden.
+- Einträge mit Bestand 0 sind nicht verfügbar.
+- Einträge mit Menge unbekannt sind verfügbar, dürfen aber nicht vom Bestand abgezogen werden.
+- Bei Einkauf erlaubt NEIN sind keine Zutaten außerhalb der Liste erlaubt.
+- Bei Einkauf erlaubt JA müssen zusätzliche Zutaten eindeutig als EINKAUF gekennzeichnet werden und dürfen nicht in die Verbrauchsliste.
+- Namen aller Bestandszutaten exakt kopieren; keine Synonyme oder Übersetzungen.
+- Bei bekannten Mengen nie mehr als den angegebenen Bestand verwenden.
+- Bestandseinheiten sind verbindlich und dürfen nicht umgerechnet werden.
+- Falls Kalte Mahlzeit für unterwegs JA: Das Rezept soll im Voraus zubereitet werden können und ohne Erwärmen essbar sein. Gib kurze Hinweise zu Vorbereitung, Verpackung, Kühlung und Transport. Nutze nur Zutaten gemäß den Bestands- und Einkaufsregeln.
+
+AUSGABEFORMAT
+1. Rezeptname
+2. Kurzbeschreibung
+3. Zutaten für {persons} Personen als Tabelle: Originalname | Menge | Einheit | Kennzeichnung
+4. Gewürze als Tabelle
+5. Geschätztes Salz: X g pro Person, Y g gesamt
+6. Zubereitung in nummerierten Schritten
+7. Kalorien gesamt und pro Person
+8. Am Ende ausschließlich dieser maschinenlesbare Abschnitt:
+VERBRAUCHSLISTE START
+Originalname | Verbrauchsmenge | Einheit
+VERBRAUCHSLISTE ENDE
+
+REGELN FÜR DIE VERBRAUCHSLISTE
+- Nur tatsächlich verwendete Zutaten mit bekanntem Bestand größer 0 aufnehmen.
+- Unbekannte Mengen, Einkaufszutaten und Gewürze mit unbekannter Menge nicht aufnehmen.
+- Namen exakt aus VERWENDBARE LEBENSMITTEL kopieren.
+- Verbrauchsmenge und Einheit müssen exakt zum Bestand passen.`;
+let state={inventory:{},history:[],template:defaultTemplate};let editingName=null;
+const save=()=>queueSave();const fmt=n=>Number.isInteger(Number(n))?String(n):Number(n).toFixed(2).replace(/0+$/,'').replace(/\.$/,'');const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'})}document.querySelectorAll('.tab').forEach(x=>x.onclick=()=>showTab(x.dataset.tab));
+function setStatus(t){document.getElementById('status').textContent=t;document.getElementById('headerStatus').textContent=t}
+function makeTable(headers,rows){if(!rows.length)return '<div class="empty">Keine Einträge vorhanden.</div>';return '<table><thead><tr>'+headers.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(v=>`<td>${esc(v)}</td>`).join('')+'</tr>').join('')+'</tbody></table>'}
+function pruneHistory(){let cut=new Date();cut.setHours(0,0,0,0);cut.setDate(cut.getDate()-2);const n=state.history.length;state.history=state.history.filter(x=>x.date>=cut.toISOString().slice(0,10));if(state.history.length!==n)save()}
+function usableEntries(){return Object.entries(state.inventory).filter(([,d])=>d.amount===null||d.unit==='ohne Mengenangabe'||Number(d.amount)>0).sort((a,b)=>a[0].localeCompare(b[0],'de'))}
+function inventoryText(){let a=usableEntries();return a.length?a.map(([n,d])=>d.amount===null?`- ${n}: Menge unbekannt, Einheit ohne Mengenangabe (verfügbar, nicht abbuchbar)`: `- ${n}: Bestand ${fmt(d.amount)} ${d.unit}`).join('\n'):'- Keine verwendbaren Lebensmittel vorhanden.'}
+function historyText(){pruneHistory();if(!state.history.length)return '- Kein Verbrauch in den letzten 3 Tagen gespeichert.';let g={};state.history.forEach(x=>(g[x.name]??=[]).push(x.date));return Object.keys(g).sort((a,b)=>a.localeCompare(b,'de')).map(n=>`- ${n}: verwendet am ${[...new Set(g[n])].sort().reverse().join(', ')}`).join('\n')}
+function refreshInventory(){let q=document.getElementById('search').value.trim().toLocaleLowerCase('de');let names=Object.keys(state.inventory).sort((a,b)=>a.localeCompare(b,'de')).filter(n=>n.toLocaleLowerCase('de').includes(q));let rows=names.map(n=>{let d=state.inventory[n];return [n,d.amount===null?'unbekannt':fmt(d.amount),d.unit,d.note||'']});document.getElementById('inventoryTable').innerHTML=makeTable(['Lebensmittel','Menge','Einheit','Notiz'],rows);document.querySelectorAll('#inventoryTable tbody tr').forEach((tr,i)=>tr.onclick=()=>selectInventoryItem(names[i],tr))}
+function selectInventoryItem(n,row){editingName=n;let d=state.inventory[n];itemName.value=n;itemAmount.value=d.amount??'';itemUnit.value=d.unit||'g';itemNote.value=d.note||'';document.querySelectorAll('#inventoryTable tbody tr').forEach(x=>x.classList.remove('selected'));row.classList.add('selected');itemName.focus()}
+function refreshSelected(){let rows=usableEntries().map(([n,d])=>[n,d.amount===null?'unbekannt':fmt(d.amount),d.unit,d.note||'']);document.getElementById('selectedTable').innerHTML=makeTable(['Lebensmittel','Menge','Einheit','Notiz'],rows);document.getElementById('preview').textContent=rows.length?rows.map(r=>`• ${r[0]} — ${r[1]} ${r[2]}`).join('\n'):'Noch keine Lebensmittel im Bestand.'}
+function refreshHistory(){pruneHistory();let rows=state.history.slice().sort((a,b)=>b.date.localeCompare(a.date)||a.name.localeCompare(b.name,'de')).map(x=>[x.date,x.name,x.amount,x.unit,x.recipe||'KI-Rezept']);document.getElementById('historyTable').innerHTML=makeTable(['Datum','Lebensmittel','Verbrauch','Einheit','Rezept'],rows)}
+function refreshAll(){refreshInventory();refreshSelected();refreshHistory();templateText.value=state.template||defaultTemplate;setStatus('Bereit')}
+function saveItem(){let n=itemName.value.trim().replace(/\s+/g,' '),u=itemUnit.value,a=itemAmount.value;if(!n)return alert('Bitte ein Lebensmittel eingeben.');if(u!=='ohne Mengenangabe'&&(a===''||!Number.isFinite(Number(a))||Number(a)<0))return alert('Bitte eine gültige Menge eingeben.');if(editingName&&editingName!==n)delete state.inventory[editingName];state.inventory[n]={amount:u==='ohne Mengenangabe'?null:Number(a),unit:u,note:itemNote.value.trim()};save();clearItem();refreshAll();setStatus('Gespeichert')}
+function clearItem(){editingName=null;itemName.value='';itemAmount.value='';itemUnit.value='g';itemNote.value='';document.querySelectorAll('#inventoryTable tbody tr').forEach(x=>x.classList.remove('selected'));itemName.focus()}
+function deleteItem(){if(!editingName)return alert('Bitte zuerst einen Eintrag anklicken.');if(confirm(`„${editingName}“ aus dem Bestand löschen?`)){delete state.inventory[editingName];save();clearItem();refreshAll()}}
+function generatePrompt(){let p=Number(persons.value),k=Number(kcalPerson.value),time=mealTime.value;if(!Number.isInteger(p)||p<1||!Number.isFinite(k)||k<1||!time)return alert('Bitte Personenanzahl, kcal pro Person und Uhrzeit korrekt eingeben.');if(!usableEntries().length&&!shopping.checked)return alert('Kein verwendbarer Bestand vorhanden. Bestand ergänzen oder Einkauf erlauben.');kcalTotal.value=fmt(p*k);let vals={persons:p,kcal_person:k,kcal_total:fmt(p*k),meal_time:time,shift:shift.value,meal:meal.value,main_meal:mainMeal.checked?'JA':'NEIN',cold_meal:coldMeal.checked?'JA':'NEIN',shopping:shopping.checked?'JA':'NEIN',inventory:inventoryText(),history:historyText()};let template=templateText.value.trim()||defaultTemplate;let out=template.replace(/\{(inventory|history|persons|kcal_person|kcal_total|meal_time|shift|meal|main_meal|cold_meal|shopping)\}/g,(_,key)=>vals[key]);if(coldMeal.checked&&!template.includes('{cold_meal}'))out+='\n\nZUSATZVORGABE: Kalte Mahlzeit für unterwegs. Im Voraus vorbereitbar, ohne Erwärmen essbar; Hinweise zu Verpackung, Kühlung und Transport angeben. Bestands- und Einkaufsregeln weiterhin einhalten.';promptText.value=out;setStatus('Prompt erzeugt');showTab('output')}
+function copyPrompt(){if(!promptText.value.trim())generatePrompt();if(promptText.value.trim())navigator.clipboard?.writeText(promptText.value).then(()=>setStatus('Prompt kopiert'))}
+function resetInputs(){persons.value=2;kcalPerson.value=700;kcalTotal.value='';mealTime.value='07:00';shift.value='frei';meal.value='Hauptmahlzeit';mainMeal.checked=true;coldMeal.checked=false;shopping.checked=false;promptText.value='';aiOutput.value='';setStatus('Eingaben zurückgesetzt')}
+function normalizeUnit(u){let x=String(u).trim().toLocaleLowerCase('de');return {gramm:'g',gram:'g',g:'g',milliliter:'ml',ml:'ml',stück:'Stück',stueck:'Stück',stk:'Stück',pack:'Packung',packung:'Packung',dose:'Dose',dosen:'Dose',bund:'Bund'}[x]||String(u).trim()}
+function processAIOutput(){let text=aiOutput.value,part=text.includes('VERBRAUCHSLISTE START')?text.split('VERBRAUCHSLISTE START')[1].split('VERBRAUCHSLISTE ENDE')[0]:text,rows=[];part.split(/\r?\n/).forEach(line=>{let x=line.split('|').map(y=>y.trim()),a=Number((x[1]||'').replace(',','.'));if(x.length>=3&&x[0]&&!Number.isNaN(a))rows.push([x[0],a,normalizeUnit(x[2])])});if(!rows.length)return alert('Keine Verbrauchsliste erkannt.');let date=prompt('Für welches Datum wurde der Verbrauch gebucht? (JJJJ-MM-TT)',new Date().toISOString().slice(0,10));if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return alert('Ungültiges Datum.');let changed=[],errors=[];for(let [n,a,u] of rows){let key=Object.keys(state.inventory).find(x=>x.toLocaleLowerCase('de')===n.toLocaleLowerCase('de'));if(!key){errors.push(`Nicht im Bestand: ${n}`);continue}let d=state.inventory[key];if(d.amount===null||d.unit==='ohne Mengenangabe')continue;if(normalizeUnit(d.unit)!==u){errors.push(`Falsche Einheit bei ${key}: ${u} statt ${d.unit}`);continue}if(a>Number(d.amount)){errors.push(`Zu wenig Bestand bei ${key}`);continue}d.amount=Number(d.amount)-a;state.history.push({date,name:key,amount:fmt(a),unit:u,recipe:'KI-Rezept'});changed.push(`${key} - ${fmt(a)} ${u}`)}pruneHistory();save();refreshAll();alert((changed.length?'Abgezogen:\n'+changed.join('\n'):'Keine Mengen abgezogen.')+(errors.length?'\n\nHinweise:\n'+errors.join('\n'):''))}
+function saveTemplate(){let t=templateText.value.trim();if(!t)return alert('Die Promptvorlage darf nicht leer sein.');state.template=t;save();setStatus('Vorlage gespeichert')}
+function restoreTemplate(){if(confirm('Bearbeitung durch die Standardvorlage ersetzen?')){templateText.value=defaultTemplate;state.template=defaultTemplate;save()}}
+function downloadJson(data,name){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+function readJsonFile(e,cb){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{cb(JSON.parse(r.result))}catch{alert('Die Datei ist keine gültige JSON-Datei.')}};r.readAsText(f,'utf-8');e.target.value=''}
+function exportBackup(){pruneHistory();downloadJson({version:1,exportedAt:new Date().toISOString(),inventory:state.inventory,history:state.history,template:state.template},'kochassistent-komplettbackup.json')}
+function importBackup(e){readJsonFile(e,d=>{if(!d||typeof d!=='object'||Array.isArray(d)||!d.inventory||!Array.isArray(d.history))return alert('Dies ist kein gültiges Komplettbackup.');if(confirm('Komplettbackup importieren? Bestand, Historie und Promptvorlage werden ersetzt.')){state={inventory:d.inventory,history:d.history,template:typeof d.template==='string'?d.template:defaultTemplate};pruneHistory();save();refreshAll();alert('Komplettbackup importiert.')}})}
+function exportInventory(){downloadJson(state.inventory,'lebensmittelbestand.json')}function importInventory(e){readJsonFile(e,d=>{if(!d||typeof d!=='object'||Array.isArray(d))return alert('Ungültiger Lebensmittelbestand.');if(confirm('Bestand importieren? Der aktuelle Bestand wird ersetzt.')){state.inventory=d;save();refreshAll()}})}
+function exportHistory(){pruneHistory();downloadJson(state.history,'verbrauchshistorie.json')}function importHistory(e){readJsonFile(e,d=>{if(!Array.isArray(d))return alert('Ungültige Verbrauchshistorie.');if(confirm('Historie importieren? Die aktuelle Historie wird ersetzt.')){state.history=d;pruneHistory();save();refreshAll()}})}
+function exportTemplate(){downloadJson({prompt_template:state.template},'promptvorlage.json')}function importTemplate(e){readJsonFile(e,d=>{let t=typeof d.prompt_template==='string'?d.prompt_template:typeof d.template==='string'?d.template:'';if(!t)return alert('Die Datei enthält keine gültige Promptvorlage.');if(confirm('Promptvorlage importieren?')){state.template=t;save();refreshAll()}})}
+/* ===== Anmeldung und gemeinsamer Cloud-Speicher (Supabase) ===== */
+const SUPABASE_URL = "https://apaqbpltynnrcyhzovay.supabase.co";
+const SUPABASE_KEY = "sb_publishable_w59liY7wLY_aQJN-1CJxEA_b7Gzr5DU";
+const HASH = location.hash;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const TBL = 'koch_shared', ROWID = 1;
+let USER = null, ROW = {exists: false, version: 0}, dirty = false, pushing = false, pushTimer = null, pollTimer = null;
+function normState(d) {
+  return {
+    inventory: d && d.inventory && typeof d.inventory === 'object' && !Array.isArray(d.inventory) ? d.inventory : {},
+    history: Array.isArray(d && d.history) ? d.history : [],
+    template: d && typeof d.template === 'string' && d.template.trim() ? d.template : defaultTemplate
+  };
+}
+function userIsTyping() { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName); }
+function queueSave() {
+  if (!USER) return;
+  dirty = true; setStatus('Speichert …');
+  clearTimeout(pushTimer); pushTimer = setTimeout(pushState, 500);
+}
+async function pushState() {
+  if (!USER || !dirty) return;
+  if (pushing) { pushTimer = setTimeout(pushState, 300); return; }
+  pushing = true; dirty = false;
+  const payload = {inventory: state.inventory, history: state.history, template: state.template};
+  let ok = false, conflict = false;
+  try {
+    if (!ROW.exists) {
+      const r = await sb.from(TBL).insert({id: ROWID, data: payload, version: 1, updated_by: USER.email});
+      if (r.error) {
+        if (/duplicate|unique|23505/i.test(r.error.message + (r.error.code || ''))) conflict = true; else throw r.error;
+      } else { ROW = {exists: true, version: 1}; ok = true; }
+    } else {
+      const r = await sb.from(TBL).update({data: payload, version: ROW.version + 1, updated_at: new Date().toISOString(), updated_by: USER.email})
+        .eq('id', ROWID).eq('version', ROW.version).select('version');
+      if (r.error) throw r.error;
+      if (!r.data.length) conflict = true; else { ROW.version = r.data[0].version; ok = true; }
+    }
+  } catch (e) {
+    dirty = true; setStatus('Speichern fehlgeschlagen');
+    alert('Speichern fehlgeschlagen: ' + e.message + '\n\nHast du kochassistent_gemeinsam.sql in Supabase ausgeführt?');
+  } finally { pushing = false; }
+  if (conflict) { await resolveConflict(); return; }
+  if (ok) setStatus(dirty ? 'Speichert …' : 'Gespeichert');
+}
+async function resolveConflict() {
+  const r = await sb.from(TBL).select('data,version,updated_by').eq('id', ROWID).maybeSingle();
+  if (r.error || !r.data) { dirty = true; alert('Speichern nicht möglich: Der gemeinsame Stand konnte nicht gelesen werden.'); return; }
+  const who = r.data.updated_by ? ' (zuletzt: ' + r.data.updated_by + ')' : '';
+  if (confirm('Der gemeinsame Bestand wurde inzwischen von jemand anderem geändert' + who + '.\n\nOK = deren Stand laden (deine letzte Änderung geht verloren)\nAbbrechen = meinen Stand behalten und den anderen überschreiben')) {
+    state = normState(r.data.data); ROW = {exists: true, version: r.data.version}; dirty = false; refreshAll(); setStatus('Neueste Version geladen');
+  } else { ROW = {exists: true, version: r.data.version}; dirty = true; pushState(); }
+}
+async function pullState() {
+  const r = await sb.from(TBL).select('data,version').eq('id', ROWID).maybeSingle();
+  if (r.error) {
+    alert('Daten konnten nicht geladen werden: ' + r.error.message + '\n\nHast du kochassistent_gemeinsam.sql in Supabase ausgeführt?');
+    setStatus('Laden fehlgeschlagen'); return false;
+  }
+  if (r.data) { state = normState(r.data.data); ROW = {exists: true, version: r.data.version}; return true; }
+  state = normState(null); ROW = {exists: false, version: 0};
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem(STORAGEKEY) || 'null'); } catch (e) {}
+  if (local && (Object.keys(local.inventory || {}).length || (local.history || []).length) &&
+      confirm('In diesem Browser liegen noch lokale Kochassistent-Daten.\nJetzt in den gemeinsamen Bestand übernehmen?')) {
+    state = normState(local); queueSave();
+  }
+  return true;
+}
+async function pollState() {
+  if (!USER || dirty || pushing || userIsTyping() || document.visibilityState !== 'visible') return;
+  const r = await sb.from(TBL).select('data,version,updated_by').eq('id', ROWID).maybeSingle();
+  if (r.error || !r.data || dirty || pushing || userIsTyping()) return;
+  if (r.data.version !== ROW.version) {
+    state = normState(r.data.data); ROW = {exists: true, version: r.data.version};
+    refreshAll(); setStatus('Aktualisiert' + (r.data.updated_by ? ' (von ' + r.data.updated_by + ')' : ''));
+  }
+}
+function showLogin() {
+  $('app').hidden = true; $('auth').hidden = false;
+  $('auth').innerHTML = `<div class="box"><h3>🍲 Kochassistent</h3><p class="hint">Nur für eingeladene Mitglieder.</p>
+  <div class="field"><label>E-Mail</label><input id="a-mail" type="email" autocomplete="username"></div>
+  <div class="field"><label>Passwort</label><input id="a-pw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+  <div class="actions"><button class="btn primary" onclick="doLogin()">Anmelden</button></div></div>`;
+}
+async function doLogin() {
+  const r = await sb.auth.signInWithPassword({email: $('a-mail').value.trim(), password: $('a-pw').value});
+  if (r.error) { alert('Anmeldung fehlgeschlagen: ' + r.error.message); return; }
+  start();
+}
+function showSetPassword() {
+  $('app').hidden = true; $('auth').hidden = false;
+  $('auth').innerHTML = `<div class="box"><h3>Passwort festlegen</h3>
+  <div class="field"><label>Neues Passwort (mind. 8 Zeichen)</label><input id="a-pw" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSetPw()"></div>
+  <div class="actions"><button class="btn primary" onclick="doSetPw()">Speichern</button></div></div>`;
+}
+async function doSetPw() {
+  const r = await sb.auth.updateUser({password: $('a-pw').value});
+  if (r.error) { alert(r.error.message); return; }
+  history.replaceState(null, '', location.pathname + location.search);
+  start();
+}
+async function changePw() {
+  const pw = $('newPw').value;
+  if (pw.length < 8) { alert('Das Passwort braucht mindestens 8 Zeichen.'); return; }
+  const r = await sb.auth.updateUser({password: pw});
+  if (r.error) { alert(r.error.message); return; }
+  $('newPw').value = ''; alert('Passwort geändert.');
+}
+async function logout() {
+  clearTimeout(pushTimer); clearInterval(pollTimer);
+  if (dirty) await pushState();
+  await sb.auth.signOut();
+  location.reload();
+}
+async function start() {
+  const {data} = await sb.auth.getSession();
+  if (!data.session) { showLogin(); return; }
+  USER = data.session.user;
+  $('auth').hidden = true; $('app').hidden = false;
+  $('accountInfo').textContent = 'Angemeldet als ' + (USER.email || '') + '. Der Bestand wird mit allen Mitgliedern geteilt.';
+  if (await pullState()) { refreshAll(); setStatus('Bereit'); }
+  clearInterval(pollTimer); pollTimer = setInterval(pollState, 15000);
+}
+async function init() {
+  if (HASH.includes('type=invite') || HASH.includes('type=recovery')) {
+    const {data} = await sb.auth.getSession();
+    if (data.session) { showSetPassword(); return; }
+  }
+  start();
+}
+sb.auth.onAuthStateChange(ev => { if (ev === 'SIGNED_OUT' && USER) location.reload(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pollState(); });
+window.addEventListener('beforeunload', e => { if (dirty || pushing) { e.preventDefault(); e.returnValue = ''; } });
+init();
+</script>
+</body></html>
