@@ -24,7 +24,8 @@
 <div class="field" style="min-width:240px"><select id="scanMode"><option value="add">➕ Einkauf (Bestand erhöhen)</option><option value="sub">➖ Verbrauch (Bestand verringern)</option></select></div></div>
 <div id="scanReader" style="max-width:420px;margin-top:14px"></div>
 <div id="scanPanel" hidden></div>
-<h3 style="margin-top:22px">Gespeicherte Barcodes</h3><div id="barcodeTable" class="scroll"></div></div>
+<h3 style="margin-top:22px">Gespeicherte Barcodes</h3><div id="barcodeTable" class="scroll"></div>
+<p class="hint" style="margin-top:12px">Produktvorschläge: Daten von <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL).</p></div>
 <div class="box"><input id="search" class="search" placeholder="🔎 Lebensmittel suchen …" oninput="refreshInventory()"><div id="inventoryTable" class="scroll" style="margin-top:14px"></div></div></section>
 <section id="history" class="panel"><div class="panel-intro"><div><h2>Verbrauchshistorie</h2><p>Die letzten drei Tage helfen, Wiederholungen bei Rezepten zu vermeiden.</p></div></div><div class="box"><div class="actions" style="margin-top:0"><h3 style="margin:0;flex:1">Verbrauchte Lebensmittel der letzten 3 Tage</h3><button class="btn" onclick="pruneHistory();refreshAll()">Bereinigen</button><button class="btn" onclick="exportHistory()">Exportieren</button></div><div id="historyTable" class="scroll" style="margin-top:15px"></div></div></section>
 <section id="template" class="panel"><div class="panel-intro"><div><h2>Promptvorlage</h2><p>Platzhalter werden beim Erzeugen automatisch ersetzt.</p></div></div><div class="box"><h3>Vorlage bearbeiten</h3><p class="hint">Verfügbare Platzhalter: {inventory}, {history}, {persons}, {kcal_person}, {kcal_total}, {meal_time}, {shift}, {meal}, {main_meal}, {cold_meal}, {shopping}.</p><textarea id="templateText" class="field textarea" style="width:100%;min-height:480px;padding:14px;border:1px solid var(--line);border-radius:13px;font:13px/1.5 Consolas,monospace"></textarea><div class="actions"><button class="btn primary" onclick="saveTemplate()">Vorlage speichern</button><button class="btn" onclick="restoreTemplate()">Standardvorlage</button><button class="btn" onclick="exportTemplate()">Exportieren</button></div></div></section>
@@ -251,7 +252,7 @@ window.addEventListener('beforeunload', e => { if (dirty || pushing) { e.prevent
 init();
 </script>
 <script>
-/* ===== Barcode-Scanner (Tabelle koch_barcodes) ===== */
+/* ===== Barcode-Scanner (Tabelle koch_barcodes) + Open Food Facts ===== */
 (function(){
 let scanner=null,scanning=false,locked=false,cur=null,BC={},bcTried=false,picked='';
 const U=['g','ml','Stück','Packung','Dose','Bund'];
@@ -294,6 +295,31 @@ window.saveItem=function(){
 function panel(html){const p=$('scanPanel');p.hidden=false;p.innerHTML=html}
 function stockText(n){const d=state.inventory[n];return d?(d.amount===null?'unbekannt':fmt(d.amount)+' '+d.unit):'noch nicht im Bestand'}
 
+/* --- Open Food Facts --- */
+function parseQty(q,pq){
+  const T={kg:['g',1000],g:['g',1],mg:['g',0.001],l:['ml',1000],ml:['ml',1],cl:['ml',10],dl:['ml',100]};
+  q=String(q||'').toLowerCase().replace(',','.');
+  let m=q.match(/(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(kg|mg|g|ml|cl|dl|l)\b/);
+  if(m){const t=T[m[3]];return{size:+m[1]*+m[2]*t[1],unit:t[0]}}
+  m=q.match(/(\d+(?:\.\d+)?)\s*(kg|mg|g|ml|cl|dl|l)\b/);
+  if(m){const t=T[m[2]];return{size:+m[1]*t[1],unit:t[0]}}
+  const p=Number(pq);if(p>0)return{size:p,unit:'g'};
+  return null;
+}
+async function lookupOFF(code){
+  try{
+    const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),6000);
+    const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'?fields=product_name,product_name_de,brands,quantity,product_quantity',{signal:ctl.signal});
+    clearTimeout(t);
+    if(!r.ok)return null;
+    const j=await r.json();
+    if(j.status!==1||!j.product)return null;
+    const p=j.product,name=String(p.product_name_de||p.product_name||'').trim(),q=parseQty(p.quantity,p.product_quantity);
+    if(!name&&!q)return null;
+    return{name,brand:String(p.brands||'').split(',')[0].trim(),qty:String(p.quantity||''),size:q?Math.round(q.size*1000)/1000:null,unit:q?q.unit:null};
+  }catch(e){return null}
+}
+
 window.startScan=async function(){
   if(typeof Html5Qrcode==='undefined')return alert('Scanner-Bibliothek konnte nicht geladen werden (Internetverbindung?).');
   if(scanning)return;
@@ -318,13 +344,21 @@ async function onCode(code){
     const r=await sb.from(TB).select('code,name,pack_size,unit').eq('code',code).maybeSingle();
     if(r.data){b=BC[code]={name:r.data.name,size:Number(r.data.pack_size),unit:r.data.unit}}
   }
-  cur={code,b:b||null};
-  if(b)showCount();else showNew(code);
+  cur={code,b:b||null,sugg:null};
+  if(b){showCount();return}
+  panel('<div class="box" style="margin-top:14px;background:#f0fdfa"><h3>Barcode '+esc(code)+'</h3><p class="hint">Suche in Open Food Facts …</p></div>');
+  cur.sugg=await lookupOFF(code);
+  if(!cur)return;
+  showNew(code);
 }
 
 function showNew(code){
-  picked='';
+  picked='';const s=cur.sugg;
+  const banner=s
+    ?`🌐 Open Food Facts: <b>${esc(s.name||'(ohne Namen)')}</b>${s.brand?' · '+esc(s.brand):''}${s.qty?' · Packung: '+esc(s.qty):''}${s.size?'':' · Packungsgröße nicht erkannt'}<br>Bitte prüfen und dem passenden Lebensmittel zuordnen.`
+    :'Nicht in Open Food Facts gefunden (oder keine Verbindung). Bitte manuell eingeben.';
   panel(`<div class="box" style="margin-top:14px;background:#f0fdfa"><h3>Unbekannter Barcode ${esc(code)}</h3>
+  <p class="hint" style="margin-top:-4px">${banner}</p>
   <div class="field"><label>Vorhandenes Lebensmittel suchen und antippen</label><input id="nbSearch" type="search" placeholder="🔎 Name eingeben …" oninput="nbRender()" autocomplete="off"></div>
   <div id="nbList" class="scroll" style="max-height:200px;margin-top:8px"></div>
   <p class="hint" id="nbPicked" style="margin:8px 0 14px">Kein Lebensmittel ausgewählt.</p>
@@ -333,6 +367,11 @@ function showNew(code){
   <div class="field" style="grid-column:span 3"><label>Packungsgröße</label><input id="nbSize" type="number" min="0" step="any" inputmode="decimal"></div>
   <div class="field" style="grid-column:span 3"><label>Einheit</label><select id="nbUnit">${U.map(u=>`<option>${u}</option>`).join('')}</select></div></div>
   <div class="actions"><button class="btn primary" onclick="nbSave()">Speichern &amp; weiter</button><button class="btn" onclick="scanCancel()">Abbrechen</button></div></div>`);
+  if(s){
+    if(s.name)$('nbName').value=s.name;
+    if(s.size)$('nbSize').value=s.size;
+    if(s.unit)$('nbUnit').value=s.unit;
+  }
   nbRender();
 }
 window.nbRender=function(){
@@ -344,11 +383,15 @@ window.nbRender=function(){
 };
 function nbPick(n){
   picked=picked===n?'':n;
-  const nm=$('nbName'),un=$('nbUnit');
-  nm.disabled=!!picked;if(picked)nm.value='';
-  un.disabled=false;
+  const nm=$('nbName'),un=$('nbUnit'),sz=$('nbSize'),s=cur.sugg;
+  nm.disabled=!!picked;
+  if(picked){nm.value=''}else{un.disabled=false;if(!nm.value&&s&&s.name)nm.value=s.name;if(s&&s.unit){un.value=s.unit;if(!sz.value&&s.size)sz.value=s.size}}
   const d=state.inventory[picked];
-  if(picked&&d){const u=normalizeUnit(d.unit);if(U.includes(u)){un.value=u;un.disabled=true}}
+  if(picked&&d){
+    const u=normalizeUnit(d.unit);
+    if(U.includes(u)){const prev=un.value;un.value=u;un.disabled=true;if(prev!==u)sz.value=''}
+    else un.disabled=false;
+  }
   $('nbPicked').textContent=picked?'Ausgewählt: '+picked+' (nochmal antippen zum Aufheben)':'Kein Lebensmittel ausgewählt.';
   nbRender();
 }
