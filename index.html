@@ -3,9 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#0f766e">
 <title>Kochassistent – Vorrat & Promptgenerator</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -64,7 +61,6 @@ button,.btn,.tab,select{touch-action:manipulation}
  .actions label{flex:1 1 100%}
  .status{margin:6px 0 0;width:100%}
  .pgrid{grid-template-columns:1fr}
- .pgrid .half{grid-column:auto}
 }
 @media(max-width:400px){.brand-row{gap:8px}.brand{gap:10px;min-width:0}.brand h1{font-size:18px}.logout{font-size:0;padding:8px 12px}.logout::first-letter{font-size:18px}}
 @media(max-width:600px) and (min-width:381px){.pgrid{grid-template-columns:1fr 1fr}.pgrid .full{grid-column:1/-1}}
@@ -76,10 +72,11 @@ button,.btn,.tab,select{touch-action:manipulation}
 <header class="app-header"><div class="header-inner"><div class="brand-row"><div class="brand"><div class="brand-mark">🍲</div><div><h1>Kochassistent</h1><p>Vorrat clever nutzen · Prompts präzise erstellen</p></div></div><div class="hdr-right"><div class="status-pill"><span class="status-dot"></span><span id="headerStatus">Bereit</span></div><button class="logout" onclick="logout()" title="Abmelden">⎋ Abmelden</button></div></div><nav class="tabs"><button class="tab active" data-tab="recipe">🍽️ Rezeptplanung</button><button class="tab" data-tab="inventory">📦 Lebensmittelbestand</button><button class="tab" data-tab="history">🧾 Verbrauch</button><button class="tab" data-tab="template">✍️ Promptvorlage</button><button class="tab" data-tab="output">🤖 Ausgabe</button><button class="tab" data-tab="backup">💾 Import / Export</button></nav></div></header>
 <main>
 <section id="recipe" class="panel active"><div class="panel-intro"><div><h2>Rezeptplanung</h2><p>Vorgaben festlegen und aus deinem Bestand einen fertigen KI-Prompt erzeugen.</p></div></div><div class="box"><h3>Rezeptvorgaben</h3><div class="grid"><div class="field"><label>Personen</label><input id="persons" type="number" min="1" step="1" value="2"></div><div class="field"><label>kcal pro Person</label><input id="kcalPerson" type="number" min="1" value="700"></div><div class="field"><label>kcal gesamt</label><input id="kcalTotal" readonly></div><div class="field"><label>Uhrzeit</label><input id="mealTime" type="time" value="07:00"></div><div class="field"><label>Schicht</label><select id="shift"><option>frei</option><option>Frühschicht</option><option>Spätschicht</option><option>Nachtschicht</option></select></div><div class="field"><label>Mahlzeit</label><select id="meal"><option>Frühstück</option><option>Mittagessen</option><option>Abendessen</option><option selected>Hauptmahlzeit</option><option>Snack</option><option>keine feste Vorgabe</option></select></div></div><div class="actions"><label><input id="mainMeal" type="checkbox" checked> Hauptmahlzeit</label><label><input id="coldMeal" type="checkbox"> Kalte Mahlzeit (vorbereiten / unterwegs)</label><label><input id="shopping" type="checkbox"> Einkauf erlaubt</label></div></div><div class="box"><h3>Aktueller Lebensmittelbestand</h3><div id="selectedTable" class="scroll"></div><div class="actions"><button class="btn" onclick="refreshAll()">↻ Bestand aktualisieren</button></div></div><div class="box"><h3>Bestandsvorschau</h3><div id="preview" class="preview"></div><div class="actions"><button class="btn primary" onclick="generatePrompt()">✨ Prompt erzeugen</button><button class="btn" onclick="copyPrompt()">Prompt kopieren</button><button class="btn" onclick="showTab('output')">KI-Ausgabe öffnen</button><button class="btn warning" onclick="resetInputs()">Eingaben zurücksetzen</button><span id="status" class="status">Bereit</span></div></div></section>
-<section id="inventory" class="panel"><div class="panel-intro"><div><h2>Lebensmittelbestand</h2><p>Einträge anklicken und bearbeiten. Der Bestand ist für alle angemeldeten Mitglieder derselbe und wird automatisch gespeichert.</p></div></div><div class="box"><h3>Lebensmittel bearbeiten</h3><div class="grid"><div class="field" style="grid-column:span 2"><label>Lebensmittel</label><input id="itemName"></div><div class="field"><label>Menge</label><input id="itemAmount" type="number" min="0" step="any"></div><div class="field"><label>Einheit</label><select id="itemUnit"><option>g</option><option>ml</option><option>Stück</option><option>Packung</option><option>Dose</option><option>Bund</option><option>ohne Mengenangabe</option></select></div><div class="field" style="grid-column:span 2"><label>Notiz</label><input id="itemNote"></div></div><div class="actions"><button class="btn primary" onclick="saveItem()">Speichern</button><button class="btn" onclick="clearItem()">Neue Eingabe</button><button class="btn danger" onclick="deleteItem()">Eintrag löschen</button></div></div><div class="box" id="scanBox"><h3>📷 Barcode-Scanner</h3>
+<section id="inventory" class="panel"><div class="panel-intro"><div><h2>Lebensmittelbestand</h2><p>Einträge anklicken und bearbeiten. Der Bestand gilt für alle Mitglieder deiner Gruppe und wird automatisch gespeichert.</p></div></div><div class="box"><h3>Lebensmittel bearbeiten</h3><div class="grid"><div class="field" style="grid-column:span 2"><label>Lebensmittel</label><input id="itemName"></div><div class="field"><label>Menge</label><input id="itemAmount" type="number" min="0" step="any"></div><div class="field"><label>Einheit</label><select id="itemUnit"><option>g</option><option>ml</option><option>Stück</option><option>Packung</option><option>Dose</option><option>Bund</option><option>ohne Mengenangabe</option></select></div><div class="field" style="grid-column:span 2"><label>Notiz</label><input id="itemNote"></div></div><div class="actions"><button class="btn primary" onclick="saveItem()">Speichern</button><button class="btn" onclick="clearItem()">Neue Eingabe</button><button class="btn danger" onclick="deleteItem()">Eintrag löschen</button></div></div><div class="box" id="scanBox"><h3>📷 Barcode-Scanner</h3>
 <div class="actions" style="margin-top:0"><button class="btn primary" onclick="startScan()">Scanner starten</button><button class="btn" onclick="stopScan()">Stoppen</button>
 <div class="field" style="flex:1 1 220px"><select id="scanMode"><option value="add">➕ Einkauf (Bestand erhöhen)</option><option value="sub">➖ Verbrauch (Bestand verringern)</option></select></div></div>
 <div id="scanReader" style="margin-top:14px"></div>
+<div class="actions"><div class="field" style="flex:1 1 200px"><input id="manualCode" inputmode="numeric" placeholder="Oder Barcode von Hand eingeben" onkeydown="if(event.key==='Enter')manualScan()"></div><button class="btn" onclick="manualScan()">OK</button></div>
 <div id="scanPanel" hidden></div>
 <h3 style="margin-top:22px">Gespeicherte Barcodes</h3><div id="barcodeTable" class="scroll"></div>
 <p class="hint" style="margin-top:12px">Produktvorschläge: Daten von <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL).</p></div>
@@ -177,7 +174,8 @@ const SUPABASE_KEY = "sb_publishable_FLnQWZcxdIBwpI5l45dfuA_IAEAf47h";
 const HASH = location.hash;
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
-const TBL = 'koch_shared', ROWID = 1;
+const TBL = 'koch_group_data';
+let GROUP = null, GROUPNAME = '';
 let USER = null, ROW = {exists: false, version: 0}, dirty = false, pushing = false, pushTimer = null, pollTimer = null;
 function normState(d) {
   return {
@@ -200,25 +198,25 @@ async function pushState() {
   let ok = false, conflict = false;
   try {
     if (!ROW.exists) {
-      const r = await sb.from(TBL).insert({id: ROWID, data: payload, version: 1, updated_by: USER.email});
+      const r = await sb.from(TBL).insert({group_id: GROUP, data: payload, version: 1, updated_by: USER.email});
       if (r.error) {
         if (/duplicate|unique|23505/i.test(r.error.message + (r.error.code || ''))) conflict = true; else throw r.error;
       } else { ROW = {exists: true, version: 1}; ok = true; }
     } else {
       const r = await sb.from(TBL).update({data: payload, version: ROW.version + 1, updated_at: new Date().toISOString(), updated_by: USER.email})
-        .eq('id', ROWID).eq('version', ROW.version).select('version');
+        .eq('group_id', GROUP).eq('version', ROW.version).select('version');
       if (r.error) throw r.error;
       if (!r.data.length) conflict = true; else { ROW.version = r.data[0].version; ok = true; }
     }
   } catch (e) {
     dirty = true; setStatus('Speichern fehlgeschlagen');
-    alert('Speichern fehlgeschlagen: ' + e.message + '\n\nHast du kochassistent_gemeinsam.sql in Supabase ausgeführt?');
+    alert('Speichern fehlgeschlagen: ' + e.message + '\n\nHast du kochassistent_gruppen.sql in Supabase ausgeführt?');
   } finally { pushing = false; }
   if (conflict) { await resolveConflict(); return; }
   if (ok) setStatus(dirty ? 'Speichert …' : 'Gespeichert');
 }
 async function resolveConflict() {
-  const r = await sb.from(TBL).select('data,version,updated_by').eq('id', ROWID).maybeSingle();
+  const r = await sb.from(TBL).select('data,version,updated_by').eq('group_id', GROUP).maybeSingle();
   if (r.error || !r.data) { dirty = true; alert('Speichern nicht möglich: Der gemeinsame Stand konnte nicht gelesen werden.'); return; }
   const who = r.data.updated_by ? ' (zuletzt: ' + r.data.updated_by + ')' : '';
   if (confirm('Der gemeinsame Bestand wurde inzwischen von jemand anderem geändert' + who + '.\n\nOK = deren Stand laden (deine letzte Änderung geht verloren)\nAbbrechen = meinen Stand behalten und den anderen überschreiben')) {
@@ -226,9 +224,9 @@ async function resolveConflict() {
   } else { ROW = {exists: true, version: r.data.version}; dirty = true; pushState(); }
 }
 async function pullState() {
-  const r = await sb.from(TBL).select('data,version').eq('id', ROWID).maybeSingle();
+  const r = await sb.from(TBL).select('data,version').eq('group_id', GROUP).maybeSingle();
   if (r.error) {
-    alert('Daten konnten nicht geladen werden: ' + r.error.message + '\n\nHast du kochassistent_gemeinsam.sql in Supabase ausgeführt?');
+    alert('Daten konnten nicht geladen werden: ' + r.error.message + '\n\nHast du kochassistent_gruppen.sql in Supabase ausgeführt?');
     setStatus('Laden fehlgeschlagen'); return false;
   }
   if (r.data) { state = normState(r.data.data); ROW = {exists: true, version: r.data.version}; return true; }
@@ -243,7 +241,7 @@ async function pullState() {
 }
 async function pollState() {
   if (!USER || dirty || pushing || userIsTyping() || document.visibilityState !== 'visible') return;
-  const r = await sb.from(TBL).select('data,version,updated_by').eq('id', ROWID).maybeSingle();
+  const r = await sb.from(TBL).select('data,version,updated_by').eq('group_id', GROUP).maybeSingle();
   if (r.error || !r.data || dirty || pushing || userIsTyping()) return;
   if (r.data.version !== ROW.version) {
     state = normState(r.data.data); ROW = {exists: true, version: r.data.version};
@@ -287,12 +285,26 @@ async function logout() {
   await sb.auth.signOut();
   location.reload();
 }
+function showNoGroup(err) {
+  USER = null;
+  $('app').hidden = true; $('auth').hidden = false;
+  $('auth').innerHTML = `<div class="box"><h3>🍲 Kein Zugang</h3>
+  <p>Dein Konto ist noch keiner Gruppe zugeordnet. Bitte den Administrator, dich einer Gruppe zuzuweisen.</p>
+  ${err ? '<p class="hint">' + esc(err.message || '') + ' (Wurde kochassistent_gruppen.sql in Supabase ausgeführt?)</p>' : ''}
+  <div class="actions"><button class="btn" onclick="logout()">Abmelden</button></div></div>`;
+}
 async function start() {
   const {data} = await sb.auth.getSession();
   if (!data.session) { showLogin(); return; }
   USER = data.session.user;
+  const gm = await sb.from('koch_members').select('group_id').eq('user_id', USER.id).maybeSingle();
+  if (gm.error || !gm.data) { showNoGroup(gm.error); return; }
+  GROUP = gm.data.group_id;
+  const gn = await sb.from('koch_groups').select('name').eq('id', GROUP).maybeSingle();
+  GROUPNAME = gn.data ? gn.data.name : '';
+  const sub = document.querySelector('.brand p'); if (sub && GROUPNAME) sub.textContent = 'Gruppe: ' + GROUPNAME + ' · Vorrat clever nutzen';
   $('auth').hidden = true; $('app').hidden = false;
-  $('accountInfo').textContent = 'Angemeldet als ' + (USER.email || '') + '. Der Bestand wird mit allen Mitgliedern geteilt.';
+  $('accountInfo').textContent = 'Angemeldet als ' + (USER.email || '') + '. Gruppe: ' + GROUPNAME + '. Der Bestand wird nur mit den Mitgliedern dieser Gruppe geteilt.';
   if (await pullState()) { refreshAll(); setStatus('Bereit'); }
   clearInterval(pollTimer); pollTimer = setInterval(pollState, 15000);
 }
@@ -309,16 +321,16 @@ window.addEventListener('beforeunload', e => { if (dirty || pushing) { e.prevent
 init();
 </script>
 <script>
-/* ===== Barcode-Scanner (Tabelle koch_barcodes) + Open Food Facts ===== */
+/* ===== Barcode-Scanner (Tabelle koch_group_barcodes, je Gruppe) + Open Food Facts ===== */
 (function(){
 let scanner=null,scanning=false,locked=false,cur=null,BC={},bcTried=false,picked='';
 const U=['g','ml','Stück','Packung','Dose','Bund'];
-const TB='koch_barcodes';
-const HINT='\n\nHast du kochassistent_barcodes.sql in Supabase ausgeführt?';
+const TB='koch_group_barcodes';
+const HINT='\n\nHast du kochassistent_gruppen.sql in Supabase ausgeführt?';
 
 async function loadBC(){
-  if(!USER)return;
-  const r=await sb.from(TB).select('code,name,pack_size,unit');
+  if(!USER||!GROUP)return;
+  const r=await sb.from(TB).select('code,name,pack_size,unit').eq('group_id',GROUP);
   if(r.error){alert('Barcodes konnten nicht geladen werden: '+r.error.message+HINT);return}
   BC={};r.data.forEach(x=>{BC[x.code]={name:x.name,size:Number(x.pack_size),unit:x.unit}});
   renderBC();
@@ -332,20 +344,20 @@ function renderBC(){
 }
 window.delBarcode=async function(c){
   if(!confirm('Barcode '+c+' löschen?'))return;
-  const r=await sb.from(TB).delete().eq('code',c);
+  const r=await sb.from(TB).delete().eq('group_id',GROUP).eq('code',c);
   if(r.error)return alert('Löschen fehlgeschlagen: '+r.error.message);
   delete BC[c];renderBC();
 };
 
 const _ra=window.refreshAll;
-window.refreshAll=function(){_ra();if(USER&&!bcTried){bcTried=true;loadBC()}};
+window.refreshAll=function(){_ra();if(USER&&GROUP&&!bcTried){bcTried=true;loadBC()}};
 
 const _si=window.saveItem;
 window.saveItem=function(){
   const old=editingName,n=itemName.value.trim().replace(/\s+/g,' ');
   _si();
   if(old&&old!==n&&!state.inventory[old]&&state.inventory[n]){
-    sb.from(TB).update({name:n}).eq('name',old).then(r=>{if(r.error)alert('Barcodes konnten nicht umbenannt werden: '+r.error.message);else loadBC()});
+    sb.from(TB).update({name:n}).eq('group_id',GROUP).eq('name',old).then(r=>{if(r.error)alert('Barcodes konnten nicht umbenannt werden: '+r.error.message);else loadBC()});
   }
 };
 
@@ -384,7 +396,7 @@ async function lookupOFF(code){
 }
 
 window.startScan=async function(){
-  if(typeof Html5Qrcode==='undefined')return alert('Scanner-Bibliothek konnte nicht geladen werden (Internetverbindung?).');
+  if(typeof Html5Qrcode==='undefined')return alert('Scanner-Bibliothek konnte nicht geladen werden (Internetverbindung?). Du kannst den Barcode auch von Hand eingeben.');
   if(scanning)return;
   await loadBC();
   const F=Html5QrcodeSupportedFormats;
@@ -393,19 +405,26 @@ window.startScan=async function(){
   try{
     await scanner.start({facingMode:'environment'},{fps:10,qrbox},onCode,()=>{});
     scanning=true;locked=false;setStatus('Scanner aktiv');
-  }catch(e){alert('Kamera konnte nicht gestartet werden: '+e);scanner=null}
+  }catch(e){alert('Kamera konnte nicht gestartet werden: '+e+'\n\nTipp: Kamera-Berechtigung für diese Seite erlauben oder den Barcode von Hand eingeben.');scanner=null}
 };
 window.stopScan=async function(){
   if(scanner&&scanning){try{await scanner.stop();scanner.clear()}catch(e){}}
   scanning=false;scanner=null;locked=false;cur=null;
   $('scanReader').innerHTML='';$('scanPanel').hidden=true;setStatus('Bereit');
 };
+window.manualScan=async function(){
+  const c=$('manualCode').value.replace(/\s+/g,'');
+  if(!/^\d{6,14}$/.test(c))return alert('Bitte einen Barcode aus 6 bis 14 Ziffern eingeben.');
+  $('manualCode').value='';locked=false;
+  if(!bcTried||!Object.keys(BC).length)await loadBC();
+  onCode(c);
+};
 async function onCode(code){
   if(locked)return;locked=true;
   if(navigator.vibrate)navigator.vibrate(80);
   let b=BC[code];
   if(!b){
-    const r=await sb.from(TB).select('code,name,pack_size,unit').eq('code',code).maybeSingle();
+    const r=await sb.from(TB).select('code,name,pack_size,unit').eq('group_id',GROUP).eq('code',code).maybeSingle();
     if(r.data){b=BC[code]={name:r.data.name,size:Number(r.data.pack_size),unit:r.data.unit}}
   }
   cur={code,b:b||null,sugg:null};
@@ -468,7 +487,7 @@ window.nbSave=async function(){
     const ex=Object.keys(state.inventory).find(k=>k.toLocaleLowerCase('de')===name.toLocaleLowerCase('de'));
     if(ex){if(!confirm('„'+ex+'“ gibt es schon. Diesen Eintrag verwenden?'))return;name=ex}
   }
-  const r=await sb.from(TB).upsert({code:cur.code,name,pack_size:size,unit,updated_at:new Date().toISOString(),updated_by:USER.email});
+  const r=await sb.from(TB).upsert({group_id:GROUP,code:cur.code,name,pack_size:size,unit,updated_at:new Date().toISOString(),updated_by:USER.email},{onConflict:'group_id,code'});
   if(r.error)return alert('Barcode konnte nicht gespeichert werden: '+r.error.message+HINT);
   if(!state.inventory[name]){state.inventory[name]={amount:0,unit,note:''};save();refreshAll()}
   BC[cur.code]={name,size,unit};cur.b=BC[cur.code];renderBC();
