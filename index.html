@@ -400,28 +400,29 @@ window.startScan=async function(){
   if(scanning)return;
   await loadBC();
   const F=Html5QrcodeSupportedFormats;
-  scanner=new Html5Qrcode('scanReader',{formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39],experimentalFeatures:{useBarCodeDetectorIfSupported:true},verbose:false});
-  const qrbox=(w,h)=>({width:Math.floor(Math.min(w*0.92,340)),height:Math.floor(Math.max(90,Math.min(h*0.5,150)))});
+  scanner=new Html5Qrcode('scanReader',{formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E],experimentalFeatures:{useBarCodeDetectorIfSupported:true},verbose:false});
+  const qrbox=(w,h)=>({width:Math.floor(Math.min(w*0.92,420)),height:Math.floor(Math.min(Math.max(h*0.45,110),220))});
+  const cfg={fps:25,qrbox,disableFlip:true,videoConstraints:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080},advanced:[{focusMode:'continuous'}]}};
   try{
-    await scanner.start({facingMode:'environment'},{fps:10,qrbox},onCode,()=>{});
+    await scanner.start({facingMode:'environment'},cfg,onCode,()=>{});
     scanning=true;locked=false;setStatus('Scanner aktiv');
-  }catch(e){alert('Kamera konnte nicht gestartet werden: '+e+'\n\nTipp: Kamera-Berechtigung für diese Seite erlauben oder den Barcode von Hand eingeben.');scanner=null}
+    try{
+      const z=scanner.getRunningTrackCameraCapabilities().zoomFeature();
+      if(z&&z.isSupported())await z.apply(Math.min(z.max(),Math.max(z.min(),1.5)));
+    }catch(e){}
+  }catch(e){
+    try{
+      scanner=new Html5Qrcode('scanReader',{formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E],experimentalFeatures:{useBarCodeDetectorIfSupported:true},verbose:false});
+      await scanner.start({facingMode:'environment'},{fps:15,qrbox},onCode,()=>{});
+      scanning=true;locked=false;setStatus('Scanner aktiv');
+    }catch(e2){alert('Kamera konnte nicht gestartet werden: '+e2+'\n\nTipp: Kamera-Berechtigung für diese Seite erlauben oder den Barcode von Hand eingeben.');scanner=null}
+  }
 };
-window.stopScan=async function(){
-  if(scanner&&scanning){try{await scanner.stop();scanner.clear()}catch(e){}}
-  scanning=false;scanner=null;locked=false;cur=null;
-  $('scanReader').innerHTML='';$('scanPanel').hidden=true;setStatus('Bereit');
-};
-window.manualScan=async function(){
-  const c=$('manualCode').value.replace(/\s+/g,'');
-  if(!/^\d{6,14}$/.test(c))return alert('Bitte einen Barcode aus 6 bis 14 Ziffern eingeben.');
-  $('manualCode').value='';locked=false;
-  if(!bcTried||!Object.keys(BC).length)await loadBC();
-  onCode(c);
-};
+
 async function onCode(code){
   if(locked)return;locked=true;
   if(navigator.vibrate)navigator.vibrate(80);
+  setStatus('Barcode erkannt: '+code+' – suche Produkt …');
   let b=BC[code];
   if(!b){
     const r=await sb.from(TB).select('code,name,pack_size,unit').eq('group_id',GROUP).eq('code',code).maybeSingle();
